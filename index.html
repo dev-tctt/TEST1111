@@ -59,9 +59,6 @@
             margin-bottom: 5px; 
             color: #555;
         }
-        .data-card strong {
-            color: #1a73e8;
-        }
         .data-card a { 
             color: #007bff; 
             text-decoration: none; 
@@ -74,32 +71,54 @@
 </head>
 <body>
     <h1>🔎 Tra Cứu Dữ Liệu Liên Kết</h1>
-    <input type="text" id="search-input" placeholder="Nhập từ khóa (Nội dung, Link, Ghi chú) để tìm kiếm nhanh..." autocomplete="off">
+    <input type="text" id="search-input" placeholder="Nhập từ khóa (Tìm kiếm trong tất cả các cột) để tìm kiếm nhanh..." autocomplete="off">
     <div id="data-container">
         <p>Đang tải dữ liệu...</p>
     </div>
 
     <script>
-        const CSV_FILE_PATH = 'data.csv'; // Tên file CSV đã tải lên GitHub
+        const CSV_FILE_PATH = 'data.csv'; 
         let allData = [];
+        let headers = []; // Biến lưu trữ tên các cột thực tế từ CSV
         const container = document.getElementById('data-container');
         const searchInput = document.getElementById('search-input');
+
+        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu hay dấu cách
+        function findHeader(keywords) {
+            const normalizedKeywords = Array.isArray(keywords) ? keywords.map(k => k.toLowerCase().replace(/\s/g, '')) : [keywords.toLowerCase().replace(/\s/g, '')];
+            return headers.find(h => {
+                const normalizedHeader = h.toLowerCase().replace(/\s/g, '');
+                return normalizedKeywords.some(k => normalizedHeader.includes(k));
+            });
+        }
 
         // Hàm Tải và Phân tích cú pháp (Parse) CSV
         function loadCSV() {
             Papa.parse(CSV_FILE_PATH, {
-                download: true, // Cho phép tải file từ đường dẫn (trên GitHub Pages)
-                header: true,   // Sử dụng hàng đầu tiên làm tiêu đề cột
+                download: true, 
+                header: true,   
                 skipEmptyLines: true,
+                // THÊM delimiter: ';', NẾU FILE CỦA BẠN DÙNG CHẤM PHẨY
+                // delimiter: ';', 
                 complete: function(results) {
-                    // Papa Parse đọc tên cột chính xác theo tiêu đề trong file CSV (STT, Nội dung, Link, Ghi chú)
-                    // Lọc bỏ các hàng không có nội dung chính
-                    allData = results.data.filter(item => item['Nội dung'] && item['Nội dung'].trim() !== '');
+                    if (results.meta.fields && results.meta.fields.length > 0) {
+                         headers = results.meta.fields; // Lấy tên các cột thực tế
+                    } else {
+                        // Xử lý trường hợp không đọc được header (có thể do lỗi CSV)
+                        container.innerHTML = `<p style="color: red;">⚠️ Lỗi: Không thể đọc tên cột. Vui lòng kiểm tra lại file data.csv (đặc biệt là hàng tiêu đề).</p>`;
+                        return;
+                    }
+
+                    // Lọc bỏ hàng không có giá trị nào
+                    allData = results.data.filter(item => {
+                        return headers.some(header => item[header] && String(item[header]).trim() !== '');
+                    });
+                    
                     displayData(allData);
                 },
                 error: function(error) {
                     console.error("Lỗi Papa Parse:", error);
-                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa.</p>`;
+                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa và cấu hình GitHub Pages.</p>`;
                 }
             });
         }
@@ -112,38 +131,45 @@
                 return;
             }
 
+            // Sử dụng hàm findHeader để lấy giá trị theo tên cột linh hoạt
+            const h_NoiDung = findHeader(['Noi dung', 'Nội dung']);
+            const h_STT = findHeader('STT');
+            const h_Link = findHeader('Link');
+            const h_GhiChu = findHeader(['Ghi Chu', 'Ghi chú']);
+
             data.forEach(item => {
+                const noiDung = item[h_NoiDung] || '---';
+                const stt = item[h_STT] || '';
+                const link = item[h_Link] || '';
+                const ghiChu = item[h_GhiChu] || 'Không có';
+
                 const card = document.createElement('div');
                 card.className = 'data-card';
                 card.innerHTML = `
-                    <h3>${item['Nội dung'] || '---'}</h3>
-                    <p><strong>STT:</strong> ${item['STT'] || ''}</p>
-                    <p><strong>Liên kết:</strong> <a href="${item['Link']}" target="_blank">${item['Link'] || ''}</a></p>
-                    <p><strong>Ghi chú:</strong> ${item['Ghi chú'] || 'Không có'}</p>
+                    <h3>${noiDung}</h3>
+                    <p><strong>STT:</strong> ${stt}</p>
+                    <p><strong>Liên kết:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                    <p><strong>Ghi chú:</strong> ${ghiChu}</p>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // Hàm Xử lý Tra Cứu (Tìm kiếm)
+        // Hàm Xử lý Tra Cứu (Tìm kiếm trong TẤT CẢ các cột)
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
 
             if (!searchTerm) {
-                displayData(allData); // Nếu trống thì hiển thị tất cả
+                displayData(allData);
                 return;
             }
 
-            // Lọc dữ liệu: tìm kiếm trong 3 cột chính
             const filteredData = allData.filter(item => {
-                // Đảm bảo dữ liệu là chuỗi và chuyển về chữ thường để tìm kiếm không phân biệt chữ hoa/thường
-                const noiDung = String(item['Nội dung'] || '').toLowerCase();
-                const link = String(item['Link'] || '').toLowerCase();
-                const ghiChu = String(item['Ghi chú'] || '').toLowerCase();
-                
-                return noiDung.includes(searchTerm) || 
-                       link.includes(searchTerm) || 
-                       ghiChu.includes(searchTerm);
+                // Kiểm tra xem từ khóa có khớp với bất kỳ giá trị cột nào không
+                return headers.some(header => {
+                    const value = String(item[header] || '').toLowerCase();
+                    return value.includes(searchTerm);
+                });
             });
 
             displayData(filteredData);
