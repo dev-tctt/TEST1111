@@ -107,7 +107,7 @@
     </style>
 </head>
 <body>
-    <h1>📋 Web Tra Cứu Dữ Liệu Dạng Bảng</h1>
+    <h1>💡 Tài Liệu Tham Khảo</h1>
     <input type="text" id="search-input" placeholder="Nhập từ khóa (tìm kiếm trong tất cả các cột) để tìm kiếm nhanh..." autocomplete="off">
     
     <div id="data-container">
@@ -115,6 +115,12 @@
     </div>
 
     <script>
+        // === CẤU HÌNH MẬT KHẨU ===
+        const CORRECT_PASSWORD = "99"; // <-- ĐÃ ĐẶT LÀ "99"
+        const MAX_ATTEMPTS = 3;
+        let attempts = 0;
+        // ========================
+
         const CSV_FILE_PATH = 'data.csv'; 
         let allData = [];
         let headers = []; 
@@ -140,6 +146,38 @@
         
         // Hàm chuẩn hóa tên header (loại bỏ dấu cách và chuyển về chữ thường)
         const normalizeHeader = (header) => header.toLowerCase().replace(/\s/g, '');
+
+        // === HÀM XỬ LÝ NHẬP MẬT KHẨU ===
+        function checkPassword() {
+            while (attempts < MAX_ATTEMPTS) {
+                // Ép kiểu mật khẩu thành chuỗi để so sánh, vì prompt() trả về chuỗi
+                const enteredPass = prompt("Vui lòng nhập mật khẩu để truy cập Tài Liệu Tham Khảo:"); 
+                
+                if (enteredPass === CORRECT_PASSWORD) {
+                    // Mật khẩu đúng, bắt đầu tải dữ liệu và hiển thị trang
+                    document.body.style.display = 'block'; 
+                    loadCSV();
+                    return;
+                } else if (enteredPass !== null) {
+                    // Mật khẩu sai
+                    attempts++;
+                    alert(`Mật khẩu sai. Bạn còn ${MAX_ATTEMPTS - attempts} lần thử.`);
+                } else {
+                    // Người dùng nhấn Cancel hoặc thoát
+                    break; 
+                }
+            }
+            
+            // Hết số lần thử hoặc nhấn Cancel
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 50px; color: red; background-color: white; border-radius: 10px; margin-top: 100px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <h1>❌ TRUY CẬP BỊ TỪ CHỐI</h1>
+                    <p>Bạn đã nhập sai mật khẩu quá số lần quy định hoặc không nhập mật khẩu.</p>
+                </div>
+            `;
+            document.body.style.display = 'block'; // Hiển thị thông báo từ chối
+        }
+        // ===================================
 
         // Hàm Tải và Phân tích cú pháp (Parse) CSV
         function loadCSV() {
@@ -268,8 +306,9 @@
             displayData(filteredData);
         });
 
-        // Khởi động
-        loadCSV();
+        // 5. KHỞI ĐỘNG: Ẩn nội dung và yêu cầu mật khẩu
+        document.body.style.display = 'none'; // Ẩn nội dung trang cho đến khi nhập đúng
+        checkPassword();
     </script>
 </body>
 </html>
