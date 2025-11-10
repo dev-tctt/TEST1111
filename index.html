@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        /* CSS Cơ bản */
+        /* CSS Cơ bản và Căn chỉnh Tiêu đề/Bảng */
         body { 
             font-family: Arial, sans-serif; 
             padding: 20px; 
@@ -31,7 +31,7 @@
             font-size: 16px;
         }
         
-        /* Thiết lập Bảng (Table Styles) */
+        /* Thiết lập Bảng */
         .data-table {
             width: 100%;
             border-collapse: collapse; 
@@ -77,6 +77,25 @@
         #data-container {
             overflow-x: auto;
         }
+
+        /* === CƠ CHẾ HIỂN THỊ TIÊU ĐỀ CÓ DẤU DÙ TÊN GỐC KHÔNG DẤU/SAI === */
+        .vietnamese-header {
+            visibility: hidden; /* Ẩn tiêu đề gốc */
+            position: relative;
+        }
+        .vietnamese-header::after {
+            visibility: visible;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            content: attr(data-label); /* Lấy nội dung có dấu từ thuộc tính data-label */
+        }
+        /* ======================================================== */
     </style>
 </head>
 <body>
@@ -94,14 +113,14 @@
         const container = document.getElementById('data-container');
         const searchInput = document.getElementById('search-input');
 
-        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu, dấu cách (dùng để gán độ rộng)
-        function findHeader(keywords) {
-            const normalizedKeywords = Array.isArray(keywords) ? keywords.map(k => k.toLowerCase().replace(/\s/g, '')) : [keywords.toLowerCase().replace(/\s/g, '')];
-            return headers.find(h => {
-                const normalizedHeader = h.toLowerCase().replace(/\s/g, '');
-                return normalizedKeywords.some(k => normalizedHeader.includes(k));
-            });
-        }
+        // Ánh xạ tên cột gốc sang tên cột có dấu Tiếng Việt để hiển thị
+        const vietnameseLabels = {
+            'stt': 'STT',
+            'noidung': 'Nội dung',
+            'link': 'Liên kết',
+            'ghichu': 'Ghi chú',
+            'ghichu': 'Ghi chú' // Thêm tùy chọn
+        };
         
         // Định nghĩa ánh xạ tên cột thực tế (đã chuẩn hóa) sang class CSS
         const colmap = {
@@ -120,13 +139,13 @@
                 download: true, 
                 header: true,   
                 skipEmptyLines: true,
-                // VÔ HIỆU HÓA HOẶC THÊM DÒNG NÀY NẾU BẠN DÙNG CHẤM PHẨY:
+                // THÊM delimiter: ';', NẾU FILE CỦA BẠN DÙNG CHẤM PHẨY:
                 // delimiter: ';', 
                 complete: function(results) {
                     if (results.meta.fields && results.meta.fields.length > 0) {
                          headers = results.meta.fields; 
                     } else {
-                        container.innerHTML = `<p style="color: red;">⚠️ Lỗi: Không thể đọc tên cột. Vui lòng kiểm tra lại file data.csv (đặc biệt là hàng tiêu đề).</p>`;
+                        container.innerHTML = `<p style="color: red;">⚠️ Lỗi: Không thể đọc tên cột. Vui lòng kiểm tra lại file data.csv (hàng tiêu đề).</p>`;
                         return;
                     }
 
@@ -175,11 +194,19 @@
             });
             table.appendChild(colgroup);
             
-            // 3. TẠO TIÊU ĐỀ BẢNG
+            // 3. TẠO TIÊU ĐỀ BẢNG (GÁN data-label CÓ DẤU)
             let headerRow = thead.insertRow();
             headers.forEach(headerText => {
                 let th = document.createElement('th');
-                th.textContent = headerText;
+                const normalizedHeader = normalizeHeader(headerText);
+                
+                // Lấy tên có dấu từ ánh xạ, nếu không có thì dùng tên gốc
+                const vietnameseLabel = vietnameseLabels[normalizedHeader] || headerText;
+
+                th.textContent = headerText; // Tên gốc (bị ẩn)
+                th.className = 'vietnamese-header'; 
+                th.setAttribute('data-label', vietnameseLabel); // Tên có dấu
+                
                 headerRow.appendChild(th);
             });
 
@@ -191,18 +218,16 @@
                     let cell = row.insertCell();
                     let cellData = item[header] || '';
 
-                    // Kiểm tra nếu là cột Link (tìm kiếm linh hoạt)
+                    // Kiểm tra nếu là cột Link
                     const isLinkColumn = normalizeHeader(header).includes('link');
                     
                     if (isLinkColumn && cellData) {
-                        // Nếu là Link, hiển thị dưới dạng thẻ <a>
                         let link = document.createElement('a');
                         link.href = cellData;
                         link.textContent = cellData;
-                        link.target = "_blank"; // Mở trong tab mới
+                        link.target = "_blank"; 
                         cell.appendChild(link);
                     } else {
-                        // Dữ liệu văn bản bình thường
                         cell.textContent = cellData;
                     }
                 });
@@ -211,7 +236,7 @@
             container.appendChild(table);
         }
 
-        // Hàm Xử lý Tra Cứu (Tìm kiếm trong TẤT CẢ các cột)
+        // Hàm Xử lý Tra Cứu (Giữ nguyên)
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
 
@@ -221,7 +246,6 @@
             }
 
             const filteredData = allData.filter(item => {
-                // Kiểm tra xem từ khóa có khớp với bất kỳ giá trị cột nào không
                 return headers.some(header => {
                     const value = String(item[header] || '').toLowerCase();
                     return value.includes(searchTerm);
