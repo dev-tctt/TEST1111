@@ -12,7 +12,7 @@
         body { 
             font-family: Arial, sans-serif; 
             padding: 20px; 
-            max-width: 1000px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             background-color: #f8f8f8; 
         }
@@ -34,27 +34,29 @@
         /* Thiết lập Bảng (Table Styles) */
         .data-table {
             width: 100%;
-            border-collapse: collapse; /* Gộp các đường viền lại */
+            border-collapse: collapse; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             background-color: white;
             border-radius: 8px;
-            overflow: hidden; /* Quan trọng để áp dụng border-radius */
+            overflow: hidden; 
         }
         .data-table th, .data-table td {
-            padding: 12px 15px;
+            padding: 12px 10px;
             text-align: left;
-            border-bottom: 1px solid #f0f0f0;
+            border: 1px solid #e0e0e0; /* Đường viền dọc và ngang rõ ràng */
             word-wrap: break-word;
+            vertical-align: top;
+            font-size: 0.95em;
         }
         .data-table th {
-            background-color: #eef5ff; /* Màu nền cho tiêu đề */
+            background-color: #eef5ff; 
             color: #1a73e8;
             font-weight: bold;
             text-transform: uppercase;
             font-size: 0.9em;
         }
         .data-table tr:hover {
-            background-color: #f6f6ff; /* Hiệu ứng hover */
+            background-color: #f6f6ff; 
         }
         .data-table a {
             color: #007bff;
@@ -64,7 +66,14 @@
             text-decoration: underline;
         }
 
-        /* Responsive cho Bảng (Optional: Hiển thị thanh cuộn nếu quá hẹp) */
+        /* === CĂN CHỈNH ĐỘ RỘNG CỘT === */
+        .data-table col.col-stt { width: 8%; }
+        .data-table col.col-noidung { width: 35%; }
+        .data-table col.col-link { width: 35%; }
+        .data-table col.col-ghichu { width: 22%; }
+        /* ================================ */
+
+        /* Responsive cho Bảng */
         #data-container {
             overflow-x: auto;
         }
@@ -85,7 +94,7 @@
         const container = document.getElementById('data-container');
         const searchInput = document.getElementById('search-input');
 
-        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu, dấu cách
+        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu, dấu cách (dùng để gán độ rộng)
         function findHeader(keywords) {
             const normalizedKeywords = Array.isArray(keywords) ? keywords.map(k => k.toLowerCase().replace(/\s/g, '')) : [keywords.toLowerCase().replace(/\s/g, '')];
             return headers.find(h => {
@@ -93,6 +102,17 @@
                 return normalizedKeywords.some(k => normalizedHeader.includes(k));
             });
         }
+        
+        // Định nghĩa ánh xạ tên cột thực tế (đã chuẩn hóa) sang class CSS
+        const colmap = {
+            'stt': 'col-stt',
+            'noidung': 'col-noidung',
+            'link': 'col-link',
+            'ghichu': 'col-ghichu' 
+        };
+        
+        // Hàm chuẩn hóa tên header (loại bỏ dấu cách và chuyển về chữ thường)
+        const normalizeHeader = (header) => header.toLowerCase().replace(/\s/g, '');
 
         // Hàm Tải và Phân tích cú pháp (Parse) CSV
         function loadCSV() {
@@ -100,7 +120,7 @@
                 download: true, 
                 header: true,   
                 skipEmptyLines: true,
-                // THÊM delimiter: ';', NẾU FILE CỦA BẠN DÙNG CHẤM PHẨY
+                // VÔ HIỆU HÓA HOẶC THÊM DÒNG NÀY NẾU BẠN DÙNG CHẤM PHẨY:
                 // delimiter: ';', 
                 complete: function(results) {
                     if (results.meta.fields && results.meta.fields.length > 0) {
@@ -118,7 +138,8 @@
                     displayData(allData);
                 },
                 error: function(error) {
-                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa.</p>`;
+                    console.error("Lỗi Papa Parse:", error);
+                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa và đường dẫn file.</p>`;
                 }
             });
         }
@@ -139,7 +160,22 @@
             const thead = table.createTHead();
             const tbody = table.createTBody();
 
-            // 2. TẠO TIÊU ĐỀ BẢNG (Dùng tên cột thực tế từ CSV)
+            // 2. TẠO CÁC CỘT CHO VIỆC CĂN CHỈNH ĐỘ RỘNG
+            const colgroup = document.createElement('colgroup');
+            
+            headers.forEach(headerText => {
+                const col = document.createElement('col');
+                const normalizedHeader = normalizeHeader(headerText);
+                
+                // Áp dụng class dựa trên tên cột đã chuẩn hóa
+                if (colmap[normalizedHeader]) {
+                    col.className = colmap[normalizedHeader];
+                }
+                colgroup.appendChild(col);
+            });
+            table.appendChild(colgroup);
+            
+            // 3. TẠO TIÊU ĐỀ BẢNG
             let headerRow = thead.insertRow();
             headers.forEach(headerText => {
                 let th = document.createElement('th');
@@ -147,7 +183,7 @@
                 headerRow.appendChild(th);
             });
 
-            // 3. ĐIỀN DỮ LIỆU VÀO CÁC HÀNG
+            // 4. ĐIỀN DỮ LIỆU VÀO CÁC HÀNG
             data.forEach(item => {
                 let row = tbody.insertRow();
                 
@@ -156,7 +192,7 @@
                     let cellData = item[header] || '';
 
                     // Kiểm tra nếu là cột Link (tìm kiếm linh hoạt)
-                    const isLinkColumn = findHeader('Link') === header;
+                    const isLinkColumn = normalizeHeader(header).includes('link');
                     
                     if (isLinkColumn && cellData) {
                         // Nếu là Link, hiển thị dưới dạng thẻ <a>
