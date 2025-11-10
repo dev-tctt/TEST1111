@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Tra Cứu Dữ Liệu</title>
+    <title>Web Tra Cứu Dữ Liệu Dạng Bảng</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        /* Thiết kế Responsive Cơ bản */
+        /* CSS Cơ bản */
         body { 
             font-family: Arial, sans-serif; 
             padding: 20px; 
-            max-width: 900px; 
+            max-width: 1000px; 
             margin: 0 auto; 
             background-color: #f8f8f8; 
-            line-height: 1.6;
         }
         h1 { 
             color: #1a73e8; 
@@ -24,54 +23,57 @@
         }
         #search-input { 
             width: 100%; 
-            padding: 14px; 
-            margin-bottom: 30px; 
+            padding: 12px; 
+            margin-bottom: 25px; 
             box-sizing: border-box; 
             border: 1px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 17px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 6px; 
+            font-size: 16px;
         }
-        #data-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 20px; 
+        
+        /* Thiết lập Bảng (Table Styles) */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse; /* Gộp các đường viền lại */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden; /* Quan trọng để áp dụng border-radius */
         }
-        .data-card { 
-            background-color: white; 
-            border: 1px solid #e0e0e0; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            transition: transform 0.2s;
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+            word-wrap: break-word;
         }
-        .data-card:hover { 
-            transform: translateY(-3px); 
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        .data-table th {
+            background-color: #eef5ff; /* Màu nền cho tiêu đề */
+            color: #1a73e8;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
         }
-        .data-card h3 { 
-            margin-top: 0; 
-            color: #333; 
-            font-size: 1.2em;
+        .data-table tr:hover {
+            background-color: #f6f6ff; /* Hiệu ứng hover */
         }
-        .data-card p { 
-            font-size: 0.95em; 
-            margin-bottom: 5px; 
-            color: #555;
+        .data-table a {
+            color: #007bff;
+            text-decoration: none;
         }
-        .data-card a { 
-            color: #007bff; 
-            text-decoration: none; 
-            word-break: break-all;
-        }
-        .data-card a:hover {
+        .data-table a:hover {
             text-decoration: underline;
+        }
+
+        /* Responsive cho Bảng (Optional: Hiển thị thanh cuộn nếu quá hẹp) */
+        #data-container {
+            overflow-x: auto;
         }
     </style>
 </head>
 <body>
-    <h1>🔎 Tra Cứu Dữ Liệu Liên Kết</h1>
-    <input type="text" id="search-input" placeholder="Nhập từ khóa (Tìm kiếm trong tất cả các cột) để tìm kiếm nhanh..." autocomplete="off">
+    <h1>📋 Web Tra Cứu Dữ Liệu Dạng Bảng</h1>
+    <input type="text" id="search-input" placeholder="Nhập từ khóa (tìm kiếm trong tất cả các cột) để tìm kiếm nhanh..." autocomplete="off">
+    
     <div id="data-container">
         <p>Đang tải dữ liệu...</p>
     </div>
@@ -79,11 +81,11 @@
     <script>
         const CSV_FILE_PATH = 'data.csv'; 
         let allData = [];
-        let headers = []; // Biến lưu trữ tên các cột thực tế từ CSV
+        let headers = []; 
         const container = document.getElementById('data-container');
         const searchInput = document.getElementById('search-input');
 
-        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu hay dấu cách
+        // Hàm hỗ trợ tìm kiếm tên cột bất kể có dấu, dấu cách
         function findHeader(keywords) {
             const normalizedKeywords = Array.isArray(keywords) ? keywords.map(k => k.toLowerCase().replace(/\s/g, '')) : [keywords.toLowerCase().replace(/\s/g, '')];
             return headers.find(h => {
@@ -102,9 +104,8 @@
                 // delimiter: ';', 
                 complete: function(results) {
                     if (results.meta.fields && results.meta.fields.length > 0) {
-                         headers = results.meta.fields; // Lấy tên các cột thực tế
+                         headers = results.meta.fields; 
                     } else {
-                        // Xử lý trường hợp không đọc được header (có thể do lỗi CSV)
                         container.innerHTML = `<p style="color: red;">⚠️ Lỗi: Không thể đọc tên cột. Vui lòng kiểm tra lại file data.csv (đặc biệt là hàng tiêu đề).</p>`;
                         return;
                     }
@@ -117,42 +118,61 @@
                     displayData(allData);
                 },
                 error: function(error) {
-                    console.error("Lỗi Papa Parse:", error);
-                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa và cấu hình GitHub Pages.</p>`;
+                    container.innerHTML = `<p style="color: red;">⚠️ Lỗi khi tải file data.csv. Vui lòng kiểm tra file đã được tải lên Repository chưa.</p>`;
                 }
             });
         }
 
-        // Hàm Hiển thị Dữ liệu lên giao diện
+        // Hàm Hiển thị Dữ liệu lên giao diện Dạng Bảng
         function displayData(data) {
             container.innerHTML = '';
+
             if (data.length === 0) {
                 container.innerHTML = '<p>Không tìm thấy kết quả nào phù hợp.</p>';
                 return;
             }
 
-            // Sử dụng hàm findHeader để lấy giá trị theo tên cột linh hoạt
-            const h_NoiDung = findHeader(['Noi dung', 'Nội dung']);
-            const h_STT = findHeader('STT');
-            const h_Link = findHeader('Link');
-            const h_GhiChu = findHeader(['Ghi Chu', 'Ghi chú']);
+            // 1. Tạo Cấu trúc Bảng
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            
+            const thead = table.createTHead();
+            const tbody = table.createTBody();
 
-            data.forEach(item => {
-                const noiDung = item[h_NoiDung] || '---';
-                const stt = item[h_STT] || '';
-                const link = item[h_Link] || '';
-                const ghiChu = item[h_GhiChu] || 'Không có';
-
-                const card = document.createElement('div');
-                card.className = 'data-card';
-                card.innerHTML = `
-                    <h3>${noiDung}</h3>
-                    <p><strong>STT:</strong> ${stt}</p>
-                    <p><strong>Liên kết:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                    <p><strong>Ghi chú:</strong> ${ghiChu}</p>
-                `;
-                container.appendChild(card);
+            // 2. TẠO TIÊU ĐỀ BẢNG (Dùng tên cột thực tế từ CSV)
+            let headerRow = thead.insertRow();
+            headers.forEach(headerText => {
+                let th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
             });
+
+            // 3. ĐIỀN DỮ LIỆU VÀO CÁC HÀNG
+            data.forEach(item => {
+                let row = tbody.insertRow();
+                
+                headers.forEach(header => {
+                    let cell = row.insertCell();
+                    let cellData = item[header] || '';
+
+                    // Kiểm tra nếu là cột Link (tìm kiếm linh hoạt)
+                    const isLinkColumn = findHeader('Link') === header;
+                    
+                    if (isLinkColumn && cellData) {
+                        // Nếu là Link, hiển thị dưới dạng thẻ <a>
+                        let link = document.createElement('a');
+                        link.href = cellData;
+                        link.textContent = cellData;
+                        link.target = "_blank"; // Mở trong tab mới
+                        cell.appendChild(link);
+                    } else {
+                        // Dữ liệu văn bản bình thường
+                        cell.textContent = cellData;
+                    }
+                });
+            });
+
+            container.appendChild(table);
         }
 
         // Hàm Xử lý Tra Cứu (Tìm kiếm trong TẤT CẢ các cột)
