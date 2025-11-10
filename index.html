@@ -58,6 +58,7 @@
             /* CĂN GIỮA TIÊU ĐỀ (Theo Chiều dọc và ngang) */
             vertical-align: middle; 
             text-align: center;
+            white-space: nowrap; /* NGĂN KHÔNG CHO NỘI DUNG GỐC BỊ NGẮT DÒNG */
         }
         .data-table tr:hover {
             background-color: #f6f6ff; 
@@ -74,9 +75,9 @@
         .data-table col.col-stt { 
             width: 4%; /* Cột STT 4% */
         }
-        .data-table col.col-noidung { width: 37.5%; } /* Căn chỉnh lại */
-        .data-table col.col-link { width: 37.5%; } /* Căn chỉnh lại */
-        .data-table col.col-ghichu { width: 21%; } /* Căn chỉnh lại */
+        .data-table col.col-noidung { width: 37.5%; } 
+        .data-table col.col-link { width: 37.5%; } 
+        .data-table col.col-ghichu { width: 21%; } 
         /* ================================ */
 
         /* Responsive cho Bảng */
@@ -84,13 +85,10 @@
             overflow-x: auto;
         }
 
-        /* Cơ chế hiển thị tiêu đề có dấu */
+        /* Cơ chế hiển thị tiêu đề có dấu (Đã sửa lỗi nhảy dòng) */
         .vietnamese-header {
             visibility: hidden; 
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .vietnamese-header::after {
             visibility: visible;
@@ -99,9 +97,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            
+            display: block; /* Sửa lỗi nhảy dòng */
+            text-align: center;
+            padding: 12px 10px; /* Cùng padding với TH để căn giữa */
+
             content: attr(data-label);
         }
     </style>
@@ -226,8 +226,9 @@
                     let cell = row.insertCell();
                     let cellData = item[header] || '';
 
-                    // Kiểm tra nếu là cột Link
-                    const isLinkColumn = normalizeHeader(header).includes('link');
+                    const normalizedHeader = normalizeHeader(header);
+                    const isLinkColumn = normalizedHeader.includes('link');
+                    const isSTTColumn = normalizedHeader === 'stt';
                     
                     if (isLinkColumn && cellData) {
                         let link = document.createElement('a');
@@ -237,7 +238,7 @@
                         cell.appendChild(link);
                     } else {
                         // Căn giữa nội dung cột STT
-                        if (normalizeHeader(header) === 'stt') {
+                        if (isSTTColumn) {
                              cell.style.textAlign = 'center';
                         }
                         cell.textContent = cellData;
