@@ -54,6 +54,10 @@
             font-weight: bold;
             text-transform: uppercase;
             font-size: 0.9em;
+            
+            /* CĂN GIỮA TIÊU ĐỀ (Theo Chiều dọc và ngang) */
+            vertical-align: middle; 
+            text-align: center;
         }
         .data-table tr:hover {
             background-color: #f6f6ff; 
@@ -66,11 +70,13 @@
             text-decoration: underline;
         }
 
-        /* === CĂN CHỈNH ĐỘ RỘNG CỘT === */
-        .data-table col.col-stt { width: 8%; }
-        .data-table col.col-noidung { width: 35%; }
-        .data-table col.col-link { width: 35%; }
-        .data-table col.col-ghichu { width: 22%; }
+        /* === CĂN CHỈNH ĐỘ RỘNG CỘT MỚI === */
+        .data-table col.col-stt { 
+            width: 4%; /* Cột STT 4% */
+        }
+        .data-table col.col-noidung { width: 37.5%; } /* Căn chỉnh lại */
+        .data-table col.col-link { width: 37.5%; } /* Căn chỉnh lại */
+        .data-table col.col-ghichu { width: 21%; } /* Căn chỉnh lại */
         /* ================================ */
 
         /* Responsive cho Bảng */
@@ -78,10 +84,13 @@
             overflow-x: auto;
         }
 
-        /* === CƠ CHẾ HIỂN THỊ TIÊU ĐỀ CÓ DẤU DÙ TÊN GỐC KHÔNG DẤU/SAI === */
+        /* Cơ chế hiển thị tiêu đề có dấu */
         .vietnamese-header {
-            visibility: hidden; /* Ẩn tiêu đề gốc */
+            visibility: hidden; 
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .vietnamese-header::after {
             visibility: visible;
@@ -92,10 +101,9 @@
             bottom: 0;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            content: attr(data-label); /* Lấy nội dung có dấu từ thuộc tính data-label */
+            justify-content: center;
+            content: attr(data-label);
         }
-        /* ======================================================== */
     </style>
 </head>
 <body>
@@ -119,7 +127,7 @@
             'noidung': 'Nội dung',
             'link': 'Liên kết',
             'ghichu': 'Ghi chú',
-            'ghichu': 'Ghi chú' // Thêm tùy chọn
+            'ghichu': 'Ghi chú'
         };
         
         // Định nghĩa ánh xạ tên cột thực tế (đã chuẩn hóa) sang class CSS
@@ -228,6 +236,10 @@
                         link.target = "_blank"; 
                         cell.appendChild(link);
                     } else {
+                        // Căn giữa nội dung cột STT
+                        if (normalizeHeader(header) === 'stt') {
+                             cell.style.textAlign = 'center';
+                        }
                         cell.textContent = cellData;
                     }
                 });
